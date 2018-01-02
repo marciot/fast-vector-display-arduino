@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <float.h>
 #include <math.h>
 
-/* Please select the pattern:
+/* Please select a pre-defined pattern or animation:
  *    1 - Merry Christmas
  *    2 - Square
  *    3 - Triangle
@@ -27,6 +27,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *    5 - Happy New Year
  */
 #define PATTERN 5
+
+/* Or, to generate your own, uncomment the following and paste in coordinates from
+ * an Inkscape SVG path here:
+ */
+//#define USER_PATTERN {0,0,-9.31445,70.46485,0,-58.36914,-30.15625,0,-5.27344,41.52929,-3.1875,-22.63281,-2.80078,-18.89648,-29.9375,0,0,88.93359,20.21485,0,0,-58.66601,8.51367,58.66601,14.33789,0,8.07422,-60.03906,0,60.03906,20.21484,0,0,-12.0957,21.50977,0,1.37304,-15.98438,2.54102,0,0,-15.76562,-2.81641,0,4.39453,-37.29883,3.51563,37.29883,-2.67578,0,0,15.76562,3.33594,0,1.15234,15.98438,21.98633,0,0,27.41992,23.125,0,0,-38.12305,9.33984,38.12305,23.89453,0,-14.50195,-48.7793,10.50195,-31.85547,0,54.02149,40.10156,0,0,-17.79883,-16.9746,0,0,-19.55469,14.44726,0,0,-16.91992,-14.44726,0,0,-16.86328,15.43554,0,0,-17.79883,-38.5625,0,0,26.61328,-18.96094,0,-10.27343,34.55274,0,-34.55274,-23.125,0,0,50.16602,-11.54883,-77.58399}
+
+/* If your custom pattern uses relative coordinates, such as those obtained
+ * from an Inkscape SVG, then leave the following defined. Otherwise, if you
+ * wish to use absolute coordinates, comment out the following line: 
+ */
+#define USER_PATTERN_USES_RELATIVE_POINTS
 
 /* The RAPID_SWEEP_MODE is extremely sensitive to the RC constant,
  * so configure these values here:
@@ -814,7 +825,11 @@ inline float compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, ui
 
 #define S 0.5
 
-#if PATTERN == 1
+#if defined(USER_PATTERN)
+const float PROGMEM user_pattern[] = USER_PATTERN;
+rect_t user_pattern_rect;
+
+#elif PATTERN == 1
 const float PROGMEM merry_christmas[] = {
   0,0,0.0123,-0.1378, 0,-0.1205, -0.02706,0, -0.01968,0.025, 0.0049,0.025, 0.05903,-0.039, 0.03198,-0.037, 0.04427,0.02, 0.01476,0.047, -0.0098,0.1919, 0.0098,-0.2116, 0.03444,-0.02, 0.04919,0.02, 0.02214,0.049, -0.0074,0.1083, 0,0.071, 0.02952,0.01, 0.02706,-0.059, 0.06149,-0.052, -0.04673,-0.01, -0.01476,0.064, 0.05657,0.039, 0.02952,-0.032, 0.0098,-0.069, 0.0246,0.015, 0.01476,-0.01, 0.0025,0.064, 0.0246,0.032, 0.02214,-0.049, 0.0049,-0.052, 0.01968,0.022, 0.01722,-0.015, 0,0.071, 0.02214,0.015, 0.02952,-0.044, 0.01722,-0.049, 0.01722,0.02, 0.0049,0.054, 0.03936,0.02, 0.02952,-0.054, -0.0074,-0.044, 0.0025,0.1205, -0.01968,0.1107, -0.0123,0.034, -0.04181,-0.012, -0.0098,-0.049, 0.04673,-0.066, 0.07625,-0.052, 0.0123,-0.039, 0.32959497,-0.155, 0.0025,-0.03, -0.05903,0.017, 0,0.044, 0.02952,-0.044, -0.08117,-0.039, -0.08117,0.042, -0.03198,0.1132, 0.03198,0.084, 0.06887,0.049, 0.09593,-0.02, 0.07871,-0.1156, 0.0074,-0.096, -0.01968,-0.069, -0.01722,0.096, -0.0074,0.1279, -0.0025,0.054, 0.0098,-0.079, 0.03444,-0.027, 0.0246,0.017, 0.0049,0.052, 0.0074,0.032, 0.03936,-0.034, 0.0049,-0.071, 0.01722,0.022, 0.01722,-0.015, 0,0.069, 0.01476,0.03, 0.03198,-0.03, 0.0123,-0.071, 0,0.064, 0.01968,0.034, 0.03935,-0.074, 0.02214,-0.025, 0.02214,0.049, -0.0098,0.037, -0.04919,0, 0,-0.029, 0.01968,0.042, 0.05903,-0.01, 0.02952,-0.042, 0.0074,-0.096, 0.0025,-0.062, 0,0.059, -0.04427,0.022, 0.08855,-0.037, -0.04673,0.022, -0.0123,0.1057, 0.0246,0.034, 0.04673,-0.02, 0.0123,-0.042, 0.0246,-0.027, 0,0.096, 0.0025,-0.076, 0.03444,-0.029, 0.03444,0.032, -0.0098,0.066, 0.0098,-0.071, 0.04427,-0.027, 0.01968,0.029, 0.0123,0.069, 0.01968,0, 0.02952,-0.071, 0.0369,-0.025, 0.02706,0.015, -0.03444,-0.01, -0.0369,0.022, 0.01476,0.059, 0.03198,0.01, 0.02214,-0.032, 0,-0.054, 0.0098,0.079, 0.02706,-0.01, 0.02214,-0.064, 0.02952,-0.02, 0,0.03, 0.02214,0.039, -0.02952,0.03, -0.0369,-0.027, 0.06149,0.03, 0.03198,-0.017,0,0
 };
@@ -892,14 +907,21 @@ void setup() {
   // put your setup code here, to run once
   Serial.begin(9600);
 
-  #if PATTERN == 1
-    compute_rect(merry_christmas, N_PTS(merry_christmas), merry_christmas_rect, DATA_RELATIVE);
+  #if defined(USER_PATTERN)
+    #if defined(USER_PATTERN_USES_RELATIVE_POINTS)
+      compute_rect(user_pattern, N_PTS(user_pattern), user_pattern_rect, DATA_RELATIVE);
+    #else
+      compute_rect(user_pattern, N_PTS(user_pattern), user_pattern_rect, DATA_ABSOLUTE);
+    #endif
+  Serial.print(F("Points in user pattern: "));
+  Serial.println(N_PTS(user_pattern));
   
+  #elif PATTERN == 1
+    compute_rect(merry_christmas, N_PTS(merry_christmas), merry_christmas_rect, DATA_RELATIVE);
     Serial.print(F("Points in merry christmas: "));
     Serial.println(N_PTS(merry_christmas));
-  #endif
-
-  #if PATTERN == 5
+    
+  #elif PATTERN == 5
     compute_rect(happy_new_year, N_PTS(happy_new_year), happy_new_year_rect, DATA_RELATIVE);
     compute_rect(happy_new_year_2018, N_PTS(happy_new_year_2018), happy_new_year_2018_rect, DATA_RELATIVE);
   
@@ -924,7 +946,24 @@ float linstep(float t, float tmin, float tmax) {
     return max(0.0, min(1.0, (t - tmin) / (tmax - tmin)));
 }
 
-#if PATTERN == 1
+#if defined(USER_PATTERN)
+void loop() {
+  const float cx = -user_pattern_rect.x - user_pattern_rect.w/2;
+  const float cy = -user_pattern_rect.y - user_pattern_rect.h/2;
+  mat_t transform;
+  mat_identity(transform);
+  mat_translate(transform, cx, cy);
+  mat_scale(transform, 1/user_pattern_rect.w, 1/user_pattern_rect.h);
+  mat_translate(transform, 0.5, 0.5);
+  mat_scale(transform, 0.9, 0.9);
+  #if defined(USER_PATTERN_USES_RELATIVE_POINTS)
+    draw_buffer(user_pattern, N_PTS(user_pattern), transform, DATA_RELATIVE);
+  #else
+    draw_buffer(user_pattern, N_PTS(user_pattern), transform, DATA_ABSOLUTE);
+  #endif
+  fb_swap();
+}
+#elif PATTERN == 1
 void loop() {
   const float x = -merry_christmas_rect.x - fmod(float(millis())/DELAY_1S/2, 2.5);
   const float y = -merry_christmas_rect.y;
