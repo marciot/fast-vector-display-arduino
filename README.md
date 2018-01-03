@@ -1,3 +1,5 @@
+[![Demo Video](https://github.com/marciot/fast-vector-display-arduino/raw/master/thumbnail.png)](https://www.youtube.com/watch?v=3Uw0HXeMNiE)
+
 # fast-vector-display-arduino
 An extremely fast vector display for Arduino
 
@@ -7,6 +9,10 @@ The circuit consists of just two 10uF capacitors and two 150 ohm resistors on pi
 Arduino does not have fast enough PWM for a low flicker-free vector display, but I wanted to show otherwise. The secret
 sauce here is the software and the novel use of carefully timed pulses of rail-to-rail voltages to charge and discharge
 the capacitors way faster than a PWM signal ever could.
+
+There is now an Instructable teaching about the technique:
+
+https://www.instructables.com/id/Super-Fast-Analog-Voltages-From-Arduino/
 
 The source code consists of:
 
