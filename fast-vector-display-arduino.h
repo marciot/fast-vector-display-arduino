@@ -16,6 +16,11 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+union byte_and_word {
+  uint8_t _byte[2];
+  uint16_t _word;
+};
+
 /****************** FRAME BUFFER DATA STRUCTURE *****************/
 
 #if defined(FIXED_RC_MODE)

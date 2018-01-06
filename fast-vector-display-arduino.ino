@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <float.h>
 #include <math.h>
+#include <EEPROM.h>
 
 /* Please select a pre-defined pattern or animation:
  *    1 - Merry Christmas
@@ -94,7 +95,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define _TIMER1_SECS_TO_TICKS(secs, prescaler) (float(secs)*(ARDUINO_CLOCK_SPEED/prescaler)) - 1
 #define _TIMER1_TICKS_TO_SECS(ticks, prescaler) (float(ticks+1)/(ARDUINO_CLOCK_SPEED/prescaler))
 #define TIMER1_SECS_TO_TICKS(secs)  _TIMER1_SECS_TO_TICKS(secs,  TIMER1_PRESCALER)
-#define TIMER1_TICKS_TO_SECS(ticks) _TIMER1_TICKS_TO_SECS(ticks, TIMER1_PRESCALER))
+#define TIMER1_TICKS_TO_SECS(ticks) _TIMER1_TICKS_TO_SECS(ticks, TIMER1_PRESCALER)
 
 #define TICKS_TO_SECS(ticks) float(ticks)/MICRO_1S
 #define SECS_TO_TICKS(secs)  (unsigned long)((secs) * MICRO_1S)
@@ -204,18 +205,18 @@ void show_time_constants() {
   print_secs(6*R*C);
 
   Serial.print(F("Max rise time: "));
-  print_secs(rc_rise_time_ab(1, 254, L));
+  print_secs(rc_rise_time_ab(1, 254));
   Serial.print(F("Max fall time: "));
-  print_secs(rc_fall_time_ab(255, 1, L));
+  print_secs(rc_fall_time_ab(255, 1));
 
   Serial.print(F("Min rise time: "));
-  print_secs(rc_rise_time_ab(1, 2, L));
+  print_secs(rc_rise_time_ab(1, 2));
 
   Serial.print(F("Min fall time: "));
-  print_secs(rc_fall_time_ab(255, 254, L));
+  print_secs(rc_fall_time_ab(255, 254));
 
   Serial.print(F("Inverse rise time: "));
-  print_secs(rc_rise_time_ab(0, 1, L));
+  print_secs(rc_rise_time_ab(0, 1));
 
   Serial.print(F("Low pass filter cut-off frequency: "));
   Serial.println(1/(2*PI*R*C));
@@ -235,7 +236,7 @@ void show_time_constants() {
   volatile float fA, fB;
   mat_t m;
   benchmark_start();
-  f = rc_rise_time_ab(a, b, L);
+  f = rc_rise_time_ab(a, b);
   benchmark_end(F("Ticks to compute rc_rise_time_ab: "));
 
   benchmark_start();
@@ -619,7 +620,7 @@ bool pointToAnalogVoltageAndDelay(float fx, float fy, fbdat_t &data) {
     if(last_x == x && last_y == y) {
       return false;
     }
-    dt = TIMER1_SECS_TO_TICKS(compute_rapid_sweep_voltages(last_x, x, last_y, y, vx, vy));
+    dt = compute_rapid_sweep_voltages(last_x, x, last_y, y, vx, vy);
     last_x = x;
     last_y = y;
     // Encode four bytes into three.
@@ -735,6 +736,54 @@ float rc_fall_time_to_zero(float v0, float v) {
   return -1.0*R*C*log(v/v0);
 }
 
+/**************** PRE-COMPUTED LOGARITHM TABLE ****************/
+
+/* In order to speed up the computation of RC time constants,
+ * a logarithm table is written to EEPROM. Since the EEPROM has
+ * limited writes, we only write values when they are incorrect.
+ * This means that repeated execution of the program will reuse
+ * the previously stored values.
+ */
+
+#define FORCE_INLINE __attribute__((always_inline)) inline
+//#define OPTIMIZE    __attribute__ ((optimize(1)))
+
+#define RC_DELAY_TABLE_OFFSET 0
+    
+bool update_rc_delay(uint8_t v, uint16_t d) {
+  if(read_rc_delay(v) != d) {
+    const uint16_t addr = RC_DELAY_TABLE_OFFSET + (v<<1);
+    byte_and_word data;
+    data._word = d;
+    EEPROM.write(addr,     data._byte[0]);
+    EEPROM.write(addr + 1, data._byte[1]);
+    Serial.print(F("  Updating location "));
+    Serial.println(v);
+    return true;
+  }
+  return false;
+}
+
+FORCE_INLINE uint16_t read_rc_delay(uint8_t v) {
+  const uint16_t addr = RC_DELAY_TABLE_OFFSET + (v<<1);
+  byte_and_word data;
+  data._byte[0] = EEPROM.read(addr);
+  data._byte[1] = EEPROM.read(addr + 1);
+  return data._word;
+}
+
+void compute_rc_delay_table() {
+  uint8_t bytes_written = 0;
+  Serial.print(F("Checking EEPROM values... "));
+  for(uint16_t v = 0; v < 256; v++) {
+    if(update_rc_delay(v, TIMER1_SECS_TO_TICKS(-1.0*R*C*log(float(v))))) {
+      bytes_written++;
+    }
+  }
+  Serial.print(bytes_written);
+  Serial.println(F(" values written"));
+}
+
 /*************************** DERIVED RC EQUATIONS ***********************/
 
 /* Time to charge a capacitor from v0 to v when connected via R to Vcc */
@@ -749,17 +798,15 @@ float rc_fall_time_to_vlow(float v0, float v, float vlow) {
 
 /* Time to charge a capacitor from (a/255)*vcc to (b/255)*vcc when connected
    via R to vcc */
-inline float rc_rise_time_ab(uint8_t a, uint8_t b, float &L) {
-  L = float(255-b)/float(255-a);
-  return -1.0*R*C*log(L);
+inline uint16_t rc_rise_time_ab(uint8_t a, uint8_t b) {
+  return read_rc_delay(255-b)-read_rc_delay(255-a);
 }
 
 /* Compute the number of seconds for the capacitor voltage to fall
    from (a/255)*vcc to (b/255)*vcc when using a supply voltage of
    vcc */
-inline float rc_fall_time_ab(uint8_t a, uint8_t b, float &L) {
-  L = float(b)/float(a);
-  return -1.0*R*C*log(L);
+inline uint16_t rc_fall_time_ab(uint8_t a, uint8_t b) {
+  return read_rc_delay(b)-read_rc_delay(a);
 }
 
 /************************* RAPID SWEEP MODE ***********************/
@@ -770,7 +817,7 @@ inline float rc_fall_time_ab(uint8_t a, uint8_t b, float &L) {
  * transition time from a to b is identical. If we pass L, a and b into this
  * function, it will return the needed PWM voltage to acheive this.
  */
-inline float pwm_voltage_for_same_switching_time(float L, uint8_t a, uint8_t b) {
+inline uint8_t pwm_voltage_for_same_switching_time(float L, uint8_t a, uint8_t b) {
   /* Derivation information:
    *   We set L equal to the part inside the log() in either rc_rise_time_from_v0 
    *   or rc_fall_time_to_vlow, then let v0 = a, let v = b:
@@ -781,16 +828,19 @@ inline float pwm_voltage_for_same_switching_time(float L, uint8_t a, uint8_t b) 
   return (L*a-b)/(L-1);
 }
 
-inline float compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, uint8_t y2, uint8_t &vx, uint8_t &vy) {
-  float dt_x, dt_y, L_x, L_y;
+inline uint16_t compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, uint8_t y2, uint8_t &vx, uint8_t &vy) {
+  uint16_t dt_x, dt_y;
+  float L_x, L_y;
 
   /* Compute the best transition time for X using rail to rail voltages */
   if(x2 > x1) {
     vx = 255;
-    dt_x = rc_rise_time_ab(x1,x2,L_x);
+    L_x = float(255-x2)/float(255-x1);
+    dt_x = rc_rise_time_ab(x1,x2);
   } else if(x2 < x1) {
     vx = 0;
-    dt_x = rc_fall_time_ab(x1,x2,L_x);
+    L_x = float(x2)/float(x1);
+    dt_x = rc_fall_time_ab(x1,x2);
   } else {
     vx = x1;
     dt_x = 0;
@@ -799,10 +849,12 @@ inline float compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, ui
   /* Compute the best transition time for Y using rail to rail voltages */
   if(y2 > y1) {
     vy = 255;
-    dt_y = rc_rise_time_ab(y1,y2,L_y);
+    L_y = float(255-y2)/float(255-y1);
+    dt_y = rc_rise_time_ab(y1,y2);
   } else if(y2 < y1) {
     vy = 0;
-    dt_y = rc_fall_time_ab(y1,y2,L_y);
+    L_y = float(y2)/float(y1);
+    dt_y = rc_fall_time_ab(y1,y2);
   } else {
     vy = y1;
     dt_y = 0;
@@ -932,6 +984,7 @@ void setup() {
     Serial.println(N_PTS(happy_new_year_2018));
   #endif
 
+  compute_rc_delay_table();
   show_time_constants();
   fb_interrupt_setup();
 }
