@@ -65,6 +65,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define FRAMEBUFFER_SIZE 340 // Number of points in framebuffer
 
+#define SHOW_FRAMERATE
+
 #include "fast-vector-display-arduino.h"
 
 /****************************** TIMESCALE CONFIGURATION ******************************/
@@ -250,7 +252,7 @@ void show_time_constants() {
   benchmark_end(F("Ticks to compute L: "));
 
   benchmark_start();
-  vf1 = pwm_voltage_for_same_switching_time(vf1, a, b);
+  //vf1 = pwm_voltage_for_same_switching_time(vf1, a, b);
   benchmark_end(F("Ticks to compute pwm_voltage_for_same_switching_time: "));
 
   benchmark_start();
@@ -543,6 +545,18 @@ void fb_swap() {
   fb_tail = fb_free;
   fb_disp = fb_head;
   interrupts();
+
+#if defined(SHOW_FRAMERATE)
+  static uint8_t frames = 0;
+  static long    last_t = millis();
+  frames++;
+  if(frames == 255) {
+    Serial.print(float(frames)/(millis()-last_t)*DELAY_1S);
+    Serial.println(F(" frames per second"));
+    frames = 0;
+    last_t = millis();
+  }
+#endif
 }
 
 /* Set up the frame buffer routine as an interrupt on timer 1 */
@@ -752,11 +766,11 @@ float rc_fall_time_to_zero(float v0, float v) {
     
 bool update_rc_delay(uint8_t v, uint16_t d) {
   if(read_rc_delay(v) != d) {
-    const uint16_t addr = RC_DELAY_TABLE_OFFSET + (v<<1);
+    const uint16_t addr = RC_DELAY_TABLE_OFFSET + v;
     byte_and_word data;
     data._word = d;
     EEPROM.write(addr,     data._byte[0]);
-    EEPROM.write(addr + 1, data._byte[1]);
+    EEPROM.write(addr + 256, data._byte[1]);
     Serial.print(F("  Updating location "));
     Serial.println(v);
     return true;
@@ -765,11 +779,29 @@ bool update_rc_delay(uint8_t v, uint16_t d) {
 }
 
 FORCE_INLINE uint16_t read_rc_delay(uint8_t v) {
-  const uint16_t addr = RC_DELAY_TABLE_OFFSET + (v<<1);
+  const uint16_t addr = v;
   byte_and_word data;
   data._byte[0] = EEPROM.read(addr);
-  data._byte[1] = EEPROM.read(addr + 1);
+  data._byte[1] = EEPROM.read(addr + 256);
   return data._word;
+}
+
+#define EEPROM_FINISH_WRITE         while(EECR & (1<<EEPE));
+#define EEPROM_HIGH_ADDR(addr_high) EEARH=addr_high;
+#define EEPROM_READ(addr_low, into) EEARL=addr_low; EECR |= (1<<EERE); into = EEDR;
+
+FORCE_INLINE uint16_t read_rc_delay(uint8_t addr_a, uint8_t addr_b) {
+  byte_and_word data_a;
+  byte_and_word data_b;
+  
+  EEPROM_HIGH_ADDR(0b00);
+  EEPROM_READ(addr_a, data_a._byte[0]);
+  EEPROM_READ(addr_b, data_b._byte[0]);
+
+  EEPROM_HIGH_ADDR(0b01);
+  EEPROM_READ(addr_a, data_a._byte[1]);
+  EEPROM_READ(addr_b, data_b._byte[1]);
+  return data_b._word - data_a._word;
 }
 
 void compute_rc_delay_table() {
@@ -817,7 +849,7 @@ inline uint16_t rc_fall_time_ab(uint8_t a, uint8_t b) {
  * transition time from a to b is identical. If we pass L, a and b into this
  * function, it will return the needed PWM voltage to acheive this.
  */
-inline uint8_t pwm_voltage_for_same_switching_time(float L, uint8_t a, uint8_t b) {
+inline uint8_t pwm_voltage_for_same_switching_time(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
   /* Derivation information:
    *   We set L equal to the part inside the log() in either rc_rise_time_from_v0 
    *   or rc_fall_time_to_vlow, then let v0 = a, let v = b:
@@ -825,36 +857,38 @@ inline uint8_t pwm_voltage_for_same_switching_time(float L, uint8_t a, uint8_t b
    *    For (b < a), solve L = (v-vlow)/(v0-vlow) for vlow
    * In both cases, the result is (L*a-b)/(L-1)
    */
-  return (L*a-b)/(L-1);
+  return (b*c-d*a)/(b-a);
 }
 
 inline uint16_t compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, uint8_t y2, uint8_t &vx, uint8_t &vy) {
   uint16_t dt_x, dt_y;
-  float L_x, L_y;
 
-  /* Compute the best transition time for X using rail to rail voltages */
-  if(x2 > x1) {
+  const bool x_rising  = x2 > x1;
+  const bool y_rising  = y2 > y1;
+  const bool x_falling = x2 < x1;
+  const bool y_falling = y2 < y1;
+
+  if(x_rising) {
     vx = 255;
-    L_x = float(255-x2)/float(255-x1);
-    dt_x = rc_rise_time_ab(x1,x2);
-  } else if(x2 < x1) {
+    x1 = 255-x1;
+    x2 = 255-x2;
+    dt_x = read_rc_delay(x1,x2);
+  } else if(x_falling) {
     vx = 0;
-    L_x = float(x2)/float(x1);
-    dt_x = rc_fall_time_ab(x1,x2);
+    dt_x = read_rc_delay(x1,x2);
   } else {
     vx = x1;
     dt_x = 0;
   }
 
-  /* Compute the best transition time for Y using rail to rail voltages */
-  if(y2 > y1) {
+  if(y_rising) {
     vy = 255;
-    L_y = float(255-y2)/float(255-y1);
-    dt_y = rc_rise_time_ab(y1,y2);
-  } else if(y2 < y1) {
+    y1 = 255-y1;
+    y2 = 255-y2;
+    dt_y = read_rc_delay(y1,y2);
+  } else if(y_falling) {
     vy = 0;
-    L_y = float(y2)/float(y1);
-    dt_y = rc_fall_time_ab(y1,y2);
+    dt_y = read_rc_delay(y1,y2);
   } else {
     vy = y1;
     dt_y = 0;
@@ -863,10 +897,18 @@ inline uint16_t compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1,
   /* The limiting factor will be the slowest of the X or Y transitions. */
   /* The other, being faster, must be slowed via PWM to match the slowest. */
   if(dt_y < dt_x) {
-    vy = pwm_voltage_for_same_switching_time(L_x, y1, y2);
+    if(y_rising) {
+      y1 = 255-y1;
+      y2 = 255-y2;
+    }
+    vy = pwm_voltage_for_same_switching_time(x1, x2, y1, y2);
     return dt_x;
   } else if(dt_y > dt_x) {
-    vx = pwm_voltage_for_same_switching_time(L_y, x1, x2);
+    if(x_rising) {
+      x1 = 255-x1;
+      x2 = 255-x2;
+    }
+    vx = pwm_voltage_for_same_switching_time(y1, y2, x1, x2);
     return dt_y;
   } else {
     return dt_x;
