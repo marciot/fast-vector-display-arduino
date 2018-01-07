@@ -18,11 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <float.h>
 #include <math.h>
+#include <limits.h>
 #include <EEPROM.h>
 
 /* Please select a pre-defined pattern or animation:
  *    1 - Merry Christmas
- *    2 - Square
+ *    2 - Flag
  *    3 - Triangle
  *    4 - Spiral
  *    5 - Happy New Year
@@ -56,7 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /* Setting DOMAIN_RESTRICTION to 1 restricts the analog voltage
  * range to 1-254, which a significant decrease in flicker.
  */
-#define DOMAIN_RESTRICTION 1
+#define DOMAIN_RESTRICTION 2
 
 /* The FIXED_RC_MODE is an old method which is much slower
  * and uses more memory You shouldn't use it.
@@ -188,14 +189,14 @@ uint16_t benchmark_end(const __FlashStringHelper* str) {
 }
 
 void print_secs(float secs) {
-  Serial.print(_TIMER1_SECS_TO_TICKS(secs, 1));
+  Serial.print(_TIMER1_SECS_TO_TICKS(secs, 1),0);
   Serial.print(F(" ticks ("));
   Serial.print(secs, 7);
   Serial.println(F(" secs)."));
 }
 
 void show_time_constants() {
-  float L, f;
+  float L, f, t;
   
   Serial.print(F("RC Time Constant: "));
   print_secs(R*C);
@@ -203,22 +204,25 @@ void show_time_constants() {
   Serial.print(F("RC Time Constant times five: "));
   print_secs(5*R*C);
 
-  Serial.print(F("RC Time Constant times six: "));
-  print_secs(6*R*C);
-
+  t = rc_rise_time_ab(DOMAIN_RESTRICTION, 255 - DOMAIN_RESTRICTION);
   Serial.print(F("Max rise time: "));
-  print_secs(rc_rise_time_ab(1, 254));
+  print_secs(t);
+  if(t >= TIMER1_TICKS_TO_SECS(USHRT_MAX)) {
+    Serial.println(F("  Warning: The maximum rise time is larger than the timer limit.\n\n"));
+  }
+
+  t = rc_fall_time_ab(255 - DOMAIN_RESTRICTION, DOMAIN_RESTRICTION);
   Serial.print(F("Max fall time: "));
-  print_secs(rc_fall_time_ab(255, 1));
+  print_secs(t);
+  if(t >= TIMER1_TICKS_TO_SECS(USHRT_MAX)) {
+    Serial.println(F("  Warning: The maximum fall time is larger than the timer limit.\n\n"));
+  }
 
   Serial.print(F("Min rise time: "));
   print_secs(rc_rise_time_ab(1, 2));
 
   Serial.print(F("Min fall time: "));
   print_secs(rc_fall_time_ab(255, 254));
-
-  Serial.print(F("Inverse rise time: "));
-  print_secs(rc_rise_time_ab(0, 1));
 
   Serial.print(F("Low pass filter cut-off frequency: "));
   Serial.println(1/(2*PI*R*C));
@@ -237,27 +241,10 @@ void show_time_constants() {
   volatile mat_t vM;
   volatile float fA, fB;
   mat_t m;
+  
   benchmark_start();
   f = rc_rise_time_ab(a, b);
   benchmark_end(F("Ticks to compute rc_rise_time_ab: "));
-
-  benchmark_start();
-  for(uint8_t i = 0; i < 255; i++) {
-    c += d;
-  }
-  benchmark_end(F("Ticks to add 255 16-bit numbers: "));
-
-  benchmark_start();
-  L = (b<a) ? (double)a/(double)b : (double)(255-a)/(double)(255-b);
-  benchmark_end(F("Ticks to compute L: "));
-
-  benchmark_start();
-  //vf1 = pwm_voltage_for_same_switching_time(vf1, a, b);
-  benchmark_end(F("Ticks to compute pwm_voltage_for_same_switching_time: "));
-
-  benchmark_start();
-  uL = (b<a) ? (uint16_t(a)<<8)/b : (uint16_t(255-a)<<8)/(255-b);
-  benchmark_end(F("Ticks to compute uL: "));
 
   benchmark_start();
   uL = (c)/(b);
@@ -278,12 +265,6 @@ void show_time_constants() {
   benchmark_start();
   vf2 = log(f1);
   benchmark_end(F("Ticks to compute float log: "));
-
-  a = 245;
-  b = 1;
-  benchmark_start();
-  a = (a)/(b);
-  benchmark_end(F("Ticks to compute 8-bit division: "));
 
   f1 = vf1, f2 = vf2;
   MAKE_MATRIX(m, vf1, vf2, vf1, vf2, vf1, vf2, vf1, vf2, vf1);
@@ -656,6 +637,9 @@ bool pointToAnalogVoltageAndDelay(float fx, float fy, fbdat_t &data) {
       Serial.print(F(","));
       Serial.println(vy);
     }
+    if(dt & 0xC0000000) {
+      Serial.print(F("Unable to encode voltages, overflow detected!"));
+    }
     data.dt = dt & 0x3FFFFFFF;
   #endif
   return true;
@@ -769,10 +753,8 @@ bool update_rc_delay(uint8_t v, uint16_t d) {
     const uint16_t addr = RC_DELAY_TABLE_OFFSET + v;
     byte_and_word data;
     data._word = d;
-    EEPROM.write(addr,     data._byte[0]);
+    EEPROM.write(addr,       data._byte[0]);
     EEPROM.write(addr + 256, data._byte[1]);
-    Serial.print(F("  Updating location "));
-    Serial.println(v);
     return true;
   }
   return false;
@@ -852,12 +834,14 @@ inline uint16_t rc_fall_time_ab(uint8_t a, uint8_t b) {
 inline uint8_t pwm_voltage_for_same_switching_time(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
   /* Derivation information:
    *   We set L equal to the part inside the log() in either rc_rise_time_from_v0 
-   *   or rc_fall_time_to_vlow, then let v0 = a, let v = b:
-   *    For (b > a), solve L = (vcc-v)/(vcc-v0)   for vcc 
-   *    For (b < a), solve L = (v-vlow)/(v0-vlow) for vlow
-   * In both cases, the result is (L*a-b)/(L-1)
+   *   or rc_fall_time_to_vlow, then let v0 = c, let v = d:
+   *    For (d > c), solve L = (vcc-v)/(vcc-v0)   for vcc 
+   *    For (d < c), solve L = (v-vlow)/(v0-vlow) for vlow
+   * In both cases, the result is (L*c-d)/(L-1)
    */
-  return (b*c-d*a)/(b-a);
+  //float L = float(b)/float(a);
+  //return (L*c-d)/(L-1);
+  return (long(b)*c-long(a)*d)/(b-a);
 }
 
 inline uint16_t compute_rapid_sweep_voltages(uint8_t x1, uint8_t x2, uint8_t y1, uint8_t y2, uint8_t &vx, uint8_t &vy) {
@@ -1060,12 +1044,16 @@ void loop() {
 }
 #elif PATTERN == 1
 void loop() {
-  const float x = -merry_christmas_rect.x - fmod(float(millis())/DELAY_1S/2, 2.5);
-  const float y = -merry_christmas_rect.y;
+  const float cx = -merry_christmas_rect.x - merry_christmas_rect.w/2;
+  const float cy = -merry_christmas_rect.y - merry_christmas_rect.h/2;
+  const float tx =  -fmod(float(millis())/DELAY_1S/2, 2.5);
   mat_t transform;
   mat_identity(transform);
-  mat_scale(transform, 1.5, 1.5);
-  mat_translate(transform, x, y);
+  mat_translate(transform, cx, cy);
+  mat_scale(transform, 1/merry_christmas_rect.h, 1/merry_christmas_rect.h);
+  mat_translate(transform, 0.5, 0.5);
+  mat_scale(transform, 0.9, 0.9);
+  mat_translate(transform, tx, 0);
   draw_buffer(merry_christmas, N_PTS(merry_christmas), transform, DATA_RELATIVE);
   fb_swap();
 }
@@ -1073,6 +1061,8 @@ void loop() {
 void loop() {
   mat_t transform;
   mat_identity(transform);
+  mat_scale(transform, 0.25, 0.25);
+  mat_translate(transform, 0.5, 0.5);
   draw_buffer(square_pts, N_PTS(square_pts), transform);
   fb_swap();
 }
@@ -1080,6 +1070,8 @@ void loop() {
 void loop() {
   mat_t transform;
   mat_identity(transform);
+  mat_scale(transform, 0.25, 0.25);
+  mat_translate(transform, 0.5, 0.5);
   draw_buffer(triangle_pts, N_PTS(triangle_pts), transform);
   fb_swap();
 }
