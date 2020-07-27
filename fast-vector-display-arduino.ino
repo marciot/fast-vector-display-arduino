@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *    3 - Triangle
  *    4 - Spiral
  *    5 - Happy New Year
+ *    6 - Drunken Octopus TV Intro
  */
 #define PATTERN 5
 
@@ -978,6 +979,18 @@ const float PROGMEM happy_new_year_digit_8[] = {ST, PT(-2,1),PT(0,4),PT(2,1),PT(
 //const float PROGMEM happy_new_year_digit_9[] = {ST, PT(-2,0),PT(-2,-1),PT(0,-4),PT(2,-1),PT(2,0),PT(2,1),PT(-2,-1),PT(-2,0),PT(-2,1),PT(0,4),PT(2,1),PT(2,0),PT(2,-1),PT(0,-4),PT(0,9),PT(-2,1),PT(-2,0),PT(-2,-1),PT(0,0),PT(2,1),PT(2,0),PT(2,-1),PT(0,-9),PT(0,4),PT(-2,1)};
 const float PROGMEM happy_new_year_digit_9[] = {ST, PT(-2,-1),PT(0,-4),PT(2,-1),PT(2,0),PT(2,1),PT(-2,-1),PT(-2,0),PT(-2,1),PT(0,4),PT(2,1),PT(2,0),PT(2,-1),PT(0,-4),PT(0,9),PT(-2,1),PT(-2,0),PT(-2,-1),PT(0,0),PT(2,1),PT(2,0),PT(2,-1),PT(0,-9),PT(0,4),PT(-2,1),PT(-2,0)};
 const float PROGMEM happy_new_year_2018[] = {-33.88672,10.25391,-11.32812,30.5664,3.61328,19.53126,11.03516,11.13281,-10.54883,9.11523,0,-12.67969,-23.24219,0,-38.12305,23.98633,0,-5.57617,-1.85547,-26.17187,-6.83593,-14.7461,-15.33203,-11.03515,-23.24219,-4.58985,-27.14844,6.54297,-14.94141,17.38281,-3.20898,18.12305,-9.5332,-14.37305,-35.54688,-11.71875,-20.60547,3.8086,-13.96484,11.23047,-6.73828,15.13671,-1.36719,20.89844,0,5.76172,35.35156,0,0,-15.03906,2.14844,-13.96485,6.73828,-3.51562,6.64063,3.22266,2.24609,9.57031,-7.32422,23.4375,-45.80078,78.02734,0,22.5586,86.81641,0,0,-26.95313,-43.26172,0,39.9414,-64.25781,3.75782,-9.86524,0,35.70508,2.34375,24.41406,7.91015,14.55079,14.94141,10.2539,20.94531,3.18555,0,-24.29492,-5.41797,-2.81641,-1.26953,-16.60156,0,-77.14844,1.36719,-15.52734,5.85937,-3.41797,5.66407,3.22265,1.26953,15.72266,0,78.32031,-1.36719,14.94141,-5.25,3.29492,0,24.31641,1.73438,0.0254,19.43359,-3.125,14.84375,-10.25391,8.10547,-15.33203,1.95312,-26.17187,0,-27.38086,16.15039,1.93945,4.88282,5.56641,0.8789,22.07031,0,84.76562,39.45313,0,0,-80.1875,13.67383,12.75586,27.83203,5.56641,0.20312,-0.004,0,-24.32031,-5.86719,-2.92187,-1.85546,-13.1836,0,-20.50781,1.66015,-12.10938,5.66406,-2.92968,5.85938,3.02734,1.85547,12.01172,0,20.21484,-1.46485,13.47657,-4.99609,2.90039,0,24.32421,27.75,-5.74023,14.45313,-14.94141,3.71093,-28.22265,-4.6875,-33.20313,-13.3789,-10.54687,13.3789,-11.23047,3.32032,-18.45703,-9.96094,-30.95703,-35.01367,-10.82618,0,24.33399,4.64257,2.60547,1.46485,10.54687,0,10.83985,-1.36719,11.13281,-5.27344,2.63672,-5.27343,-2.73438,-1.5625,-9.86328,0,-12.01172,1.36718,-10.35156,5.14844,-2.82617,0,-24.32031};
+
+#elif PATTERN == 6
+#define ST 0.5, 0.5
+#define PT(x,y) x/16.0,y/16.0
+const float PROGMEM happy_new_year_line[]    = {0, 0, 0.25, 0.25, 0, 0};
+const float PROGMEM happy_new_year_digit_1[] = {ST ,PT(0,6),PT(-2,0),PT(4,0),PT(-2,0),PT(0,-13),PT(-2,2),PT(2,-2),PT(0,7)};
+//const float PROGMEM happy_new_year_digit_2[] = {ST, PT(-4,3),PT(-1,3),PT(11,0),PT(-11,0),PT(1,-3),PT(4,-3),PT(5,-2),PT(0,-4),PT(-5,-1),PT(-5,2),PT(5,-2),PT(5,1),PT(0,4),PT(-5,2)};
+const float PROGMEM happy_new_year_digit_2[] = {ST, PT(-2,3),PT(-1,3),PT(7,0),PT(-7,0),PT(1,-3),PT(2,-3),PT(2,-1),PT(2,-1),PT(0,-3),PT(-2,-1),PT(-3,0),PT(-2,1),PT(2,-1),PT(3,0),PT(2,1),PT(0,3),PT(-2,1),PT(-2,1)};
+const float PROGMEM happy_new_year_digit_3[] = {ST, PT(3,0),PT(1,1),PT(0,4),PT(-2.,1),PT(-2,0),PT(-2,-1),PT(2,1),PT(2,0),PT(2,-1),PT(0,-4),PT(-1,-1),PT(-3,0),PT(3,0),PT(1,-1),PT(0,-4),PT(-2,-1),PT(-2,0),PT(-2,1),PT(2,-1),PT(2,0),PT(2,1),PT(0,4),PT(-1,1),PT(-3,0)};
+
+const float PROGMEM drunken_octopus_pts[] = {124.276,1046.298,-10.25786,-1.3557,-9.4377,-3.1656,-17.456955,-7.3376,-21.50378,-14.0959,-8.23045,-6.912,-21.09221,-23.40574,-6.75519,-8.40198,-11.60331,-21.38445,-12.1228895,-51.294,8.7126095,-21.82271,21.31511,-9.98019,34.72073,12.78728,9.77498,23.43743,1.9067,33.36707,2.37639,10.24722,2.7162,11.4923,15.555975,26.04,40.09636,16.52727,41.09006,-15.93782,11.52016,-18.78992,0.99472,-22.99109,-11.4153,-31.06065,-6.32647,-11.20921,-8.22282,-19.87794,-9.73435,-47.57028,1.62966,-17.69144,4.64894,-18.29076,4.99068,-10.98523,7.65334,-9.70766,11.54366,-10.80627,7.38291,-4.9633,8.58452,-3.95932,34.00962,-5.66152,32.10576,8.58049,13.90451,8.84169,17.67338,20.42742,4.83969,10.1354,4.74134,22.58912,-3.16738,30.76862,-11.76327,38.42287,-11.27242,25.01895,0.0146,51.66895,17.77108,21.78184,40.44151,9.77496,18.17521,-3.7225,13.01815,-6.42748,7.38516,-6.70815,7.01628,-7.61919,5.34455,-9.79029,3.92715,-8.78769,4.85657,-16.88841,2.00016,-17.51804,-0.81738,-11.34034,1.58629,-13.82577,19.19581,-23.03099,24.79683,-2.75356,16.69811,9.77252,5.90329,9.65231,1.59112,18.90579,-7.51937,33.59112,-28.86925,46.77007,-49.83026,36.0963,-7.6631,2.3717,0.57953,0.8608,-7.71387,1.861,-11.65502,2.1892,-45.69875,-2.8038,-10.44886,-4.3973,-25.88267,-13.3932,-8.61411,-6.9098,-5.79798,-6.3097,-7.20754,-7.2207,-8.33021,-6.11919,-6.61748,-2.9997,-11.90648,1.9516,-14.62195,13.50399,-6.39686,7.8123,-8.49136,7.8042,-15.08068,8.3936,-7.59008,4.1162,-18.95836,7.2004,-11.52966,2.1611};
+rect_t drunken_octopus_rect;
 #endif
 /******************************* MAIN PROGRAM *******************************/
 
@@ -1008,6 +1021,8 @@ void setup() {
 
     Serial.print(F("Points in 2018: "));
     Serial.println(N_PTS(happy_new_year_2018));
+  #elif PATTERN == 6
+    compute_rect(drunken_octopus_pts, N_PTS(drunken_octopus_pts), drunken_octopus_rect, DATA_RELATIVE);
   #endif
 
   compute_rc_delay_table();
@@ -1156,6 +1171,74 @@ void loop() {
   }
   fb_swap();
 }
+#elif PATTERN == 6
+void loop() {
+  static uint32_t start_t = 0;
+  const float cx = -drunken_octopus_rect.x - drunken_octopus_rect.w/2;
+  const float cy = -drunken_octopus_rect.y - drunken_octopus_rect.h/2;
+  if(start_t == 0) {
+    start_t = millis();
+  }
+  const float t = float(millis()-start_t)/DELAY_1S;
+  if(t < 3.0) {
+    mat_t transform;
+    mat_identity(transform);
+    mat_rotate(transform, t*2*PI);
+    mat_translate(transform, 0.5, 0.5);
+    draw_buffer(happy_new_year_line, N_PTS(happy_new_year_line), transform);
+    mat_identity(transform);
+    switch(3-int(t)) {
+      case 3: draw_buffer(happy_new_year_digit_3, N_PTS(happy_new_year_digit_3), transform, DATA_RELATIVE); break;
+      case 2: draw_buffer(happy_new_year_digit_2, N_PTS(happy_new_year_digit_2), transform, DATA_RELATIVE); break;
+      case 1: draw_buffer(happy_new_year_digit_1, N_PTS(happy_new_year_digit_1), transform, DATA_RELATIVE); break;
+    }
+  } else if(t < 9.0) {
+    // Zoom and rotate
+    const float t1 = linstep(t, 3, 7);
+    const float s = t1 * 0.002;
+    const float r = t1 * 3;
+    mat_t transform;
+    mat_identity(transform);
+    mat_translate(transform, cx + (1.0 - t1)*200, cy);
+    mat_scale(transform, s, s);
+    mat_rotate(transform, 2*PI*r);
+    mat_translate(transform, 0.5, 0.5);
+    draw_buffer(drunken_octopus_pts, N_PTS(drunken_octopus_pts), transform, DATA_RELATIVE);
+  } else if(t < 12.0) {
+    // Fast zoom out
+    const float t1 = linstep(t, 9, 9.1);
+    const float s = (1.0 - t1 * 0.98) * 0.002;
+    mat_t transform;
+    mat_identity(transform);
+    mat_translate(transform, cx, cy);
+    mat_scale(transform, s, s);
+    mat_translate(transform, 0.5, 0.5);
+    draw_buffer(drunken_octopus_pts, N_PTS(drunken_octopus_pts), transform, DATA_RELATIVE);
+  } else {
+    // Rocking motion
+    mat_t transform;
+    mat_identity(transform);
+    mat_translate(transform, cx, cy);
+    const float s = sin(t - 8);
+    const float s_heartbeat = sin(t - 8) * 0.00025;
+    const float r_heartbeat = sin((t - 8) * 0.7) * 0.5;
+    mat_scale(transform, 0.002 + s_heartbeat, 0.002 + s_heartbeat);
+    mat_rotate(transform, 2*PI*3 + r_heartbeat);
+    mat_translate(transform, 0.5, 0.5);
+    draw_buffer(drunken_octopus_pts, N_PTS(drunken_octopus_pts), transform, DATA_RELATIVE);    
+  }
+  
+  /*const float cx = -drunken_octopus_rect.x - drunken_octopus_rect.w/2;
+  const float cy = -drunken_octopus_rect.y - drunken_octopus_rect.h/2;
+  mat_t transform;
+  mat_identity(transform);
+  mat_translate(transform, cx, cy);
+  mat_scale(transform, 1/drunken_octopus_rect.w, 1/drunken_octopus_rectern_rect.h);
+  mat_translate(transform, 0.5, 0.5);
+  mat_scale(transform, 0.9, 0.9);
+  draw_buffer(user_pattern, N_PTS(user_pattern), transform, DATA_RELATIVE);*/
+  fb_swap();
+}
 #endif
 
 /***************************************************************************/
@@ -1165,4 +1248,3 @@ void loop() {
  *    https://withinspecifications.30ohm.com/2014/02/20/Fast-PWM-on-AtMega328/
  *    http://playground.arduino.cc/Main/TimerPWMCheatsheet
  */
-
